@@ -49,7 +49,7 @@ func setupGTK() {
 	}
 
 	window.SetTitle("Snikt - simple http sniffer")
-	window.SetDefaultSize(800, 600)
+	window.SetDefaultSize(1200, 800)
 	_ = window.Connect("destroy", func() {
 		gtk.MainQuit()
 	})
@@ -78,9 +78,7 @@ func setupGTK() {
 		go func() {
 			for {
 				msg := <-packets_chan
-				// fmt.Println(msg)
 				text_buf = fmt.Sprintf("%s\n%s", text_buf, msg)
-				// buffer.SetText(msg)
 			}
 		}()
 	})
