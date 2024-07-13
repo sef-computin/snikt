@@ -10,11 +10,17 @@ import (
 	"github.com/sef-computin/snikt/sniff"
 )
 
+type State int
+
+const IDLE = 0
+const RUN = 1
+
 //go:embed glade/*
 var fs embed.FS
 
 var text_buf string
 var packets_chan chan string
+var state State
 
 const (
 	WindowName      = "main_window"
@@ -48,13 +54,20 @@ func setupGTK() {
 		panic(err)
 	}
 
+	_ = glib.TimeoutAdd(uint(1000), func() bool {
+		if state == RUN {
+			buffer.SetText(text_buf)
+		} else {
+		}
+
+		return true
+	})
+
 	window.SetTitle("Snikt - simple http sniffer")
 	window.SetDefaultSize(1200, 800)
 	_ = window.Connect("destroy", func() {
 		gtk.MainQuit()
 	})
-
-	window.ShowAll()
 
 	save_button, err := getButton(bldr, SaveButtonName)
 	if err != nil {
@@ -65,30 +78,38 @@ func setupGTK() {
 		panic(err)
 	}
 
+	packets_chan = make(chan string)
+
 	_ = save_button.Connect("clicked", func() {
 		text_buf += "click\n"
 		buffer.SetText(text_buf)
 	})
 	_ = start_button.Connect("clicked", func() {
-		start_button.SetVisible(false)
-		packets_chan = make(chan string)
+		// start_button.SetVisible(false)
+		switch state {
+		case 0:
+			start_button.SetLabel("Stop")
+			state = RUN
+			text_buf = ""
+			buffer.SetText(text_buf)
+		case 1:
+			start_button.SetLabel("Start")
+			state = IDLE
+		}
+	})
 
-		go sniff.StartUtil("wlan0", packets_chan)
+	go sniff.StartUtil("wlan0", packets_chan)
 
-		go func() {
-			for {
-				msg := <-packets_chan
+	go func() {
+		for {
+			msg := <-packets_chan
+			if state == RUN {
 				text_buf = fmt.Sprintf("%s\n%s", text_buf, msg)
 			}
-		}()
-	})
+		}
+	}()
 
-	_ = glib.TimeoutAdd(uint(1000), func() bool {
-		buffer.SetText(text_buf)
-
-		return true
-	})
-
+	window.ShowAll()
 	gtk.Main()
 }
 
