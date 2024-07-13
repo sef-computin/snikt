@@ -81,8 +81,8 @@ func setupGTK() {
 	packets_chan = make(chan string)
 
 	_ = save_button.Connect("clicked", func() {
-		text_buf += "click\n"
-		buffer.SetText(text_buf)
+		filename := "log.txt"
+		os.WriteFile(filename, []byte(text_buf), os.FileMode(06))
 	})
 	_ = start_button.Connect("clicked", func() {
 		// start_button.SetVisible(false)
